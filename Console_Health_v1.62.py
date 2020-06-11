@@ -1,6 +1,6 @@
 # These scripts are examples and unsupported
 # Make sure requests is installed
-# Console Health v1.6
+# Console Health v1.62
 import requests
 import csv
 import configparser
@@ -65,6 +65,12 @@ def get_all_computers(tenant_token, url, name,tenant_url):
         for all_computers in computers_json["items"]:
             # Make a temporary Dictionary to be added to the sub estate list
             computer_dictionary = {key:value for key, value in all_computers.items() if key in computer_keys}
+            # If no hostname is returned add unknown
+            if 'hostname' not in computer_dictionary.keys():
+                computer_dictionary['hostname'] = 'Unknown'
+            # This line allows you to debug on a certain computer. Add computer name
+            if 'SEC-Clean' == computer_dictionary['hostname']:
+                print('Add breakpoint here')
             # Sends the last seen date to get_days_since_last_seen and converts this to days
             computer_dictionary['Last_Seen'] = get_days_since_last_seen(computer_dictionary['lastSeenAt'])
             # Checks if Health have been returned
@@ -94,7 +100,13 @@ def get_all_computers(tenant_token, url, name,tenant_url):
                 # I don't think this is the best code. The encryption status is a dictionary, with a list, another dictionary, then the status
                 # At present this just reports one drive. The first one in the list. 0
                 encryption_status = all_computers['encryption']['volumes']
-                computer_dictionary['encryption'] = (encryption_status[0]['status'])
+                # Checks to see if the volume is returned correctly. Sometimes encryption is returned with no volume
+                try:
+                    volume_returned = encryption_status[0]
+                    computer_dictionary['encryption'] = (encryption_status[0]['status'])
+                except IndexError:
+                    computer_dictionary['encryption'] = 'Unknown'
+                # computer_dictionary['encryption'] = (encryption_status[0]['status'])
             # Checks to see if the machine is in a group
             if 'group' in all_computers.keys():
                 computer_dictionary['group'] = all_computers['group']['name']
@@ -117,9 +129,6 @@ def get_all_computers(tenant_token, url, name,tenant_url):
             # Adds the sub estate name to the computer dictionary
             computer_dictionary['Tenant'] = name
             list_of_machines_in_central.append(computer_dictionary)
-            # This line allows you to debug on a certain computer. Add computer name
-            if 'mc-nuc-dciii' == computer_dictionary['hostname']:
-                print('Add breakpoint here')
         # Check to see if you have more than 50 machines by checking if nextKey exists
         # We need to check if we need to page through lots of computers
         if 'nextKey' in computers_json['pages']:
