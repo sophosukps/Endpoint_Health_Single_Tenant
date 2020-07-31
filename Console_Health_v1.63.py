@@ -15,12 +15,12 @@
 #
 # Console_Health_v1.63
 #
-# Outputs csv file containing full inventory of all devices
+# Outputs csv file containing full inventory and health status of all devices in Sophos Central
 #
 #
 # By: Michael Curtis and Robert Prechtel
 # Date: 29/5/2020
-# EDB Health v1.62
+# Version 1.63
 # README: This script is an unsupported solution provided by
 #           Sophos Professional Services
 
