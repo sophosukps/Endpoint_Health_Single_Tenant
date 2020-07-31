@@ -1,6 +1,29 @@
-# These scripts are examples and unsupported
-# Make sure requests is installed
-# Console Health v1.62
+# Copyright 2019-2020 Sophos Limited
+#
+# Licensed under the GNU General Public License v3.0(the "License"); you may
+# not use this file except in compliance with the License.
+#
+# You may obtain a copy of the License at:
+# https://www.gnu.org/licenses/gpl-3.0.en.html
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+# implied. See the License for the specific language governing permissions and
+# limitations under the License.
+#
+#
+# Console_Health_v1.63
+#
+# Outputs csv file containing full inventory of all devices
+#
+#
+# By: Michael Curtis and Robert Prechtel
+# Date: 29/5/2020
+# EDB Health v1.62
+# README: This script is an unsupported solution provided by
+#           Sophos Professional Services
+
 import requests
 import csv
 import configparser
@@ -26,8 +49,14 @@ def get_bearer_token(client, secret, url):
             }
     request_token = requests.post(url, auth=(client, secret), data=d)
     json_token = request_token.json()
+    # headers is used to get data from Central
     headers = {'Authorization': str('Bearer ' + json_token['access_token'])}
-    return headers
+    # post headers is used to post to Central
+    post_headers = {'Authorization': f"Bearer {json_token['access_token']}",
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                    }
+    return headers, post_headers
 
 def get_whoami():
     # We now have our JWT Access Token. We now need to find out if we are a Partner or Organization
@@ -123,9 +152,9 @@ def get_all_computers(tenant_token, url, name,tenant_url):
             computer_dictionary['Machine_URL'], new_machine_id = make_valid_client_id(computer_dictionary['type'],computer_dictionary['id'])
             # This is for future use
             # Check to see if threat health is good. If no, go and find out why
-            # if 'threats' in computer_dictionary.keys():
-            #    if 'good' != computer_dictionary['threats']:
-            #        get_threats(computer_dictionary['hostname'], computers_url, new_machine_id, tenant_url,headers)
+            if 'threats' in computer_dictionary.keys():
+                if 'good' != computer_dictionary['threats']:
+                    get_threats(computer_dictionary['hostname'], computers_url, new_machine_id, tenant_url,headers, post_headers)
             # Adds the sub estate name to the computer dictionary
             computer_dictionary['Tenant'] = name
             list_of_machines_in_central.append(computer_dictionary)
@@ -150,7 +179,7 @@ def get_days_since_last_seen(report_date):
     days = (today - convert_last_seen_to_a_date).days
     return days
 
-def get_threats(hostname, computer_url, endpoint_id, tenant_url, headers):
+def get_threats(hostname, computer_url, endpoint_id, tenant_url, headers, post_headers):
     # For future use
     endpoint_id2 = 'f9955516-ff69-4925-bbe4-d5e08932d7cb'
     full_enpoint_url = f"{tenant_url}{'/common/v1/alerts/'}{endpoint_id}"
@@ -203,24 +232,103 @@ def report_field_names():
         #Customise the column headers and column order
     versions = 0
     if versions == 0:
-        fieldnames = ['Machine URL', 'Tenant', 'Hostname', 'Type', 'OS', 'Encrypted Status', 'Last Seen Date',
-                  'Days Since Last Seen', 'Health', 'Threats',
-                  'Service Health', 'Tamper Enabled', 'Group', 'Core Agent', 'Endpoint Protection', 'Intercept X',
-                  'Device Encryption', 'MTR', 'IP Addresses', 'Last User']
-        order = ['Machine_URL', 'Tenant', 'hostname', 'type', 'os', 'encryption', 'lastSeenAt', 'Last_Seen',
-                 'health','threats', 'service_health', 'tamperProtectionEnabled', 'group', 'coreAgent', 'endpointProtection', 'interceptX',
-                'deviceEncryption', 'mtr','ipv4Addresses', 'associatedPerson', 'id']
+        fieldnames = ['Machine URL',
+                      'Tenant',
+                      'Hostname',
+                      'Type',
+                      'OS',
+                      'Encrypted Status',
+                      'Last Seen Date',
+                      'Days Since Last Seen',
+                      'Health',
+                      'Threats',
+                      'Service Health',
+                      'Tamper Enabled',
+                      'Group',
+                      'Core Agent',
+                      'Endpoint Protection',
+                      'Intercept X',
+                      'Device Encryption',
+                      'MTR',
+                      'IP Addresses',
+                      'Last User',
+                      'id',
+                      ]
+        order = ['Machine_URL',
+                 'Tenant',
+                 'hostname', 'type',
+                 'os',
+                 'encryption',
+                 'lastSeenAt',
+                 'Last_Seen',
+                 'health',
+                 'threats',
+                 'service_health',
+                 'tamperProtectionEnabled',
+                 'group',
+                 'coreAgent',
+                 'endpointProtection',
+                 'interceptX',
+                 'deviceEncryption',
+                 'mtr',
+                 'ipv4Addresses',
+                 'associatedPerson',
+                 'id',
+                 ]
     else:
-        fieldnames = ['Machine URL', 'Tenant', 'Hostname', 'Type', 'OS', 'Encrypted Status', 'Last Seen Date',
-                      'Days Since Last Seen', 'Health', 'Threats', 'Service Health', 'Tamper Enabled', 'Group',
-                      'Core Agent', 'Core Agent Version', 'Endpoint Protection', 'Endpoint Protection Version', 'Intercept X',
-                      'Intercept X Version', 'Device Encryption', 'Device Encryption Version', 'MTR', 'MTR Version', 'IP Addresses',
-                      'Last User']
-        order = ['Machine_URL', 'Tenant', 'hostname', 'type', 'os', 'encryption', 'lastSeenAt',
-                    'Last_Seen', 'health', 'threats', 'service_health', 'tamperProtectionEnabled', 'group',
-                    'coreAgent', 'v_coreAgent', 'endpointProtection', 'v_endpointProtection', 'interceptX', 'v_interceptX',
-                    'deviceEncryption', 'v_deviceEncryption', 'mtr', 'v_mtr', 'ipv4Addresses',
-                    'associatedPerson', 'id']
+        fieldnames = ['Machine URL',
+                      'Tenant',
+                      'Hostname',
+                      'Type',
+                      'OS',
+                      'Encrypted Status',
+                      'Last Seen Date',
+                      'Days Since Last Seen',
+                      'Health', 'Threats',
+                      'Service Health',
+                      'Tamper Enabled',
+                      'Group',
+                      'Core Agent',
+                      'Core Agent Version',
+                      'Endpoint Protection',
+                      'Endpoint Protection Version',
+                      'Intercept X',
+                      'Intercept X Version',
+                      'Device Encryption',
+                      'Device Encryption Version',
+                      'MTR',
+                      'MTR Version',
+                      'IP Addresses',
+                      'Last User',
+                      'id',
+                      ]
+        order = ['Machine_URL',
+                 'Tenant',
+                 'hostname',
+                 'type',
+                 'os',
+                 'encryption',
+                 'lastSeenAt',
+                 'Last_Seen',
+                 'health',
+                 'threats',
+                 'service_health',
+                 'tamperProtectionEnabled',
+                 'group',
+                 'coreAgent',
+                 'v_coreAgent',
+                 'endpointProtection',
+                 'v_endpointProtection',
+                 'interceptX',
+                 'v_interceptX',
+                 'deviceEncryption',
+                 'v_deviceEncryption',
+                 'mtr',
+                 'v_mtr',
+                 'ipv4Addresses',
+                 'associatedPerson',
+                 'id',
+                 ]
     return (fieldnames,order, versions)
 
 def print_report():
@@ -237,7 +345,7 @@ clientID, clientSecret, report_name, report_file_path, console_name = read_confi
 full_report_path = f"{report_file_path}{report_name}{timestamp}{'.csv'}"
 
 token_url = 'https://id.sophos.com/api/v2/oauth2/token'
-headers = get_bearer_token(clientID, clientSecret, token_url)
+headers, post_headers = get_bearer_token(clientID, clientSecret, token_url)
 # Get the tenantID
 tenantID, tenant_url = get_whoami()
 tenant_endpoint_url = f"{tenant_url}{'/endpoint/v1/endpoints'}"
